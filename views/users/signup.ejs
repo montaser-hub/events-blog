@@ -1,0 +1,35 @@
+<%- include('../partials/head') %>
+
+<section class="container section auth">
+  <div class="panel auth__card">
+    <h1 class="panel__heading">Create your account</h1>
+    <p class="text-body-secondary mb-4">Host your own events and RSVP to others.</p>
+
+    <%- include('../partials/errors') %>
+
+    <form action="/users/signup" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken() %>" />
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="<%= form.name || '' %>" required minlength="2" maxlength="50" autocomplete="name" />
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" value="<%= form.email || '' %>" required autocomplete="email" />
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required minlength="8" autocomplete="new-password" aria-describedby="passwordHelp" />
+        <div id="passwordHelp" class="form-text">At least 8 characters.</div>
+      </div>
+      <div class="mb-4">
+        <label for="confirm_password" class="form-label">Confirm password</label>
+        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8" autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn btn-brand w-100">Sign up</button>
+    </form>
+    <p class="auth__switch">Already have an account? <a href="/users/login">Log in</a></p>
+  </div>
+</section>
+
+<%- include('../partials/foot') %>

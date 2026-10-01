@@ -1,0 +1,13 @@
+# Local MongoDB for development: `npm run db:up`
+services:
+  mongo:
+    image: mongo:7
+    container_name: events-blog-mongo
+    restart: unless-stopped
+    ports:
+      - "27019:27017" # 27019 on the host avoids clashing with other local MongoDBs
+    volumes:
+      - events-blog-mongo-data:/data/db
+
+volumes:
+  events-blog-mongo-data:

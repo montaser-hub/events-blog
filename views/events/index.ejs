@@ -1,0 +1,82 @@
+<%- include('../partials/head') %>
+
+<section class="hero">
+  <div class="container">
+    <h1>Find your next event</h1>
+    <p class="hero__lead">Meetups, workshops, tours and more — hosted by the community.</p>
+
+    <form class="search" action="/events" method="get" role="search">
+      <% if (filters.when === 'past') { %><input type="hidden" name="when" value="past" /><% } %>
+      <div class="search__field search__field--grow">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <label for="q" class="visually-hidden">Search by title or location</label>
+        <input id="q" name="q" type="search" value="<%= filters.q %>" placeholder="Search by title or location" maxlength="60" />
+      </div>
+      <div class="search__field">
+        <i class="bi bi-tag" aria-hidden="true"></i>
+        <label for="category" class="visually-hidden">Category</label>
+        <select id="category" name="category">
+          <option value="">All categories</option>
+          <% categories.forEach((c) => { %>
+          <option value="<%= c %>" <%= filters.category === c ? 'selected' : '' %>><%= c %></option>
+          <% }) %>
+        </select>
+      </div>
+      <button class="btn btn-brand" type="submit">Search</button>
+    </form>
+  </div>
+</section>
+
+<section class="container section">
+  <div class="list-head">
+    <ul class="nav nav-pills when-tabs">
+      <li class="nav-item">
+        <a class="nav-link <%= filters.when === 'upcoming' ? 'active' : '' %>" href="/events<%= h.query({ q: filters.q, category: filters.category }) %>">Upcoming</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= filters.when === 'past' ? 'active' : '' %>" href="/events<%= h.query({ q: filters.q, category: filters.category, when: 'past' }) %>">Past</a>
+      </li>
+    </ul>
+    <p class="result-count" id="resultCount">
+      <%= h.plural(total, 'event') %><% if (filters.q) { %> matching “<%= filters.q %>”<% } %><% if (filters.category) { %> in <%= filters.category %><% } %>
+      <% if (filters.q || filters.category) { %> · <a href="/events<%= h.query({ when: filters.when === 'past' ? 'past' : '' }) %>">Clear filters</a><% } %>
+    </p>
+  </div>
+
+  <% if (!events.length) { %>
+  <div class="empty-state">
+    <i class="bi bi-calendar-x" aria-hidden="true"></i>
+    <h2>No events found</h2>
+    <p>Try a different search, or be the first to host one.</p>
+    <a class="btn btn-brand" href="/events/new">Create an event</a>
+  </div>
+  <% } else { %>
+  <div class="row g-4">
+    <% events.forEach((event) => { %>
+    <div class="col-md-6 col-lg-4">
+      <%- include('../partials/event-card', { event }) %>
+    </div>
+    <% }) %>
+  </div>
+  <% } %>
+
+  <% if (pages > 1) { %>
+  <nav class="mt-5" aria-label="Pagination">
+    <ul class="pagination justify-content-center">
+      <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+        <a class="page-link" href="/events<%= h.query({ q: filters.q, category: filters.category, when: filters.when === 'past' ? 'past' : '', page: page - 1 }) %>" aria-label="Previous">&laquo;</a>
+      </li>
+      <% for (let i = 1; i <= pages; i++) { %>
+      <li class="page-item <%= i === page ? 'active' : '' %>">
+        <a class="page-link" href="/events<%= h.query({ q: filters.q, category: filters.category, when: filters.when === 'past' ? 'past' : '', page: i }) %>" <%= i === page ? 'aria-current=page' : '' %>><%= i %></a>
+      </li>
+      <% } %>
+      <li class="page-item <%= page >= pages ? 'disabled' : '' %>">
+        <a class="page-link" href="/events<%= h.query({ q: filters.q, category: filters.category, when: filters.when === 'past' ? 'past' : '', page: page + 1 }) %>" aria-label="Next">&raquo;</a>
+      </li>
+    </ul>
+  </nav>
+  <% } %>
+</section>
+
+<%- include('../partials/foot') %>

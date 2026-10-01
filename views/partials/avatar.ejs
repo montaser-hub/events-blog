@@ -1,0 +1,6 @@
+<%# locals: person ({ name, avatar }), size ('sm' | 'md' | 'lg' | 'xl') %>
+<% if (person && person.avatar) { %>
+<img class="avatar avatar-<%= size %>" src="/uploads/avatars/<%= person.avatar %>" alt="<%= person.name %>" />
+<% } else { %>
+<span class="avatar avatar-<%= size %> avatar-initials" role="img" aria-label="<%= person ? person.name : 'User' %>"><%= h.initials(person && person.name) %></span>
+<% } %>

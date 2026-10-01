@@ -1,0 +1,40 @@
+<nav class="navbar navbar-expand-lg site-nav sticky-top" aria-label="Main">
+  <div class="container">
+    <a class="navbar-brand brand" href="/events">
+      <span class="brand-mark" aria-hidden="true"><i class="bi bi-calendar2-heart-fill"></i></span>
+      Events Blog
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks" aria-controls="navLinks" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navLinks">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link <%= currentPath === '/events' ? 'active' : '' %>" href="/events">Browse</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <%= currentPath === '/events/new' ? 'active' : '' %>" href="/events/new">Create event</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav align-items-lg-center gap-lg-2">
+        <% if (user) { %>
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center gap-2 <%= currentPath === '/users/profile' ? 'active' : '' %>" href="/users/profile">
+            <%- include('avatar', { person: user, size: 'sm' }) %>
+            <span><%= user.name.split(' ')[0] %></span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <form action="/users/logout" method="post" class="d-inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken() %>" />
+            <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
+          </form>
+        </li>
+        <% } else { %>
+        <li class="nav-item"><a class="nav-link" href="/users/login">Log in</a></li>
+        <li class="nav-item"><a class="btn btn-brand btn-sm" href="/users/signup">Sign up</a></li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</nav>

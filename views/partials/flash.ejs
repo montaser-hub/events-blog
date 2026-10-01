@@ -1,0 +1,17 @@
+<% const flashed = flashMessages(); %>
+<% if (flashed.success.length || flashed.error.length) { %>
+<div class="container flash-stack">
+  <% flashed.success.forEach((msg) => { %>
+  <div class="alert alert-success alert-dismissible fade show" role="status">
+    <i class="bi bi-check-circle-fill me-2"></i><%= msg %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <% }) %>
+  <% flashed.error.forEach((msg) => { %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= msg %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <% }) %>
+</div>
+<% } %>

@@ -1,0 +1,86 @@
+<%- include('../partials/head') %>
+
+<section class="container section">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="panel profile-card">
+        <div class="profile-card__avatar" id="avatarPreview">
+          <%- include('../partials/avatar', { person: user, size: 'xl' }) %>
+        </div>
+        <h1 class="profile-card__name"><%= user.name %></h1>
+        <p class="text-body-secondary"><%= user.email %></p>
+
+        <form action="/users/avatar" method="post" enctype="multipart/form-data" class="text-start mt-3">
+          <input type="hidden" name="_csrf" value="<%= csrfToken() %>" />
+          <label for="avatar" class="form-label">Profile picture</label>
+          <input type="file" class="form-control" id="avatar" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif" required aria-describedby="avatarHelp" />
+          <div id="avatarHelp" class="form-text">JPG, PNG, WebP or GIF, up to 2 MB.</div>
+          <button type="submit" class="btn btn-outline-secondary btn-sm w-100 mt-2">Upload picture</button>
+        </form>
+
+        <hr />
+
+        <form action="/users/profile" method="post" class="text-start">
+          <input type="hidden" name="_csrf" value="<%= csrfToken() %>" />
+          <label for="name" class="form-label">Display name</label>
+          <input type="text" class="form-control" id="name" name="name" value="<%= user.name %>" required minlength="2" maxlength="50" />
+          <button type="submit" class="btn btn-brand btn-sm w-100 mt-2" id="saveProfile">Save name</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="panel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="panel__title mb-0">Events you're organising</h2>
+          <a class="btn btn-brand btn-sm" href="/events/new"><i class="bi bi-plus-lg"></i> New event</a>
+        </div>
+        <% if (!organizing.length) { %>
+        <p class="text-body-secondary mb-0">You haven't created any events yet.</p>
+        <% } else { %>
+        <ul class="mini-list list-unstyled" id="organizingList">
+          <% organizing.forEach((event) => { %>
+          <li class="mini-event cat-<%= h.slug(event.category) %>">
+            <div class="date-chip date-chip--flat" aria-hidden="true">
+              <span class="date-chip__month"><%= h.month(event.date) %></span>
+              <span class="date-chip__day"><%= h.day(event.date) %></span>
+            </div>
+            <div class="mini-event__body">
+              <a href="/events/<%= event.id %>"><%= event.title %></a>
+              <span><i class="bi bi-geo-alt"></i> <%= event.location %> · <i class="bi bi-people"></i> <%= event.attendees.length %><%= event.capacity ? ' / ' + event.capacity : '' %></span>
+            </div>
+            <% if (event.isPast) { %><span class="badge text-bg-secondary">Past</span><% } %>
+            <a class="btn btn-light btn-sm" href="/events/<%= event.id %>/edit" aria-label="Edit <%= event.title %>"><i class="bi bi-pencil"></i></a>
+          </li>
+          <% }) %>
+        </ul>
+        <% } %>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel__title">Events you're attending</h2>
+        <% if (!attending.length) { %>
+        <p class="text-body-secondary mb-0">Nothing yet — <a href="/events">browse events</a> and save your spot.</p>
+        <% } else { %>
+        <ul class="mini-list list-unstyled" id="attendingList">
+          <% attending.forEach((event) => { %>
+          <li class="mini-event cat-<%= h.slug(event.category) %>">
+            <div class="date-chip date-chip--flat" aria-hidden="true">
+              <span class="date-chip__month"><%= h.month(event.date) %></span>
+              <span class="date-chip__day"><%= h.day(event.date) %></span>
+            </div>
+            <div class="mini-event__body">
+              <a href="/events/<%= event.id %>"><%= event.title %></a>
+              <span><i class="bi bi-geo-alt"></i> <%= event.location %> · by <%= event.organizer ? event.organizer.name : 'Unknown' %></span>
+            </div>
+            <% if (event.isPast) { %><span class="badge text-bg-secondary">Past</span><% } %>
+          </li>
+          <% }) %>
+        </ul>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/foot') %>

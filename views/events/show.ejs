@@ -1,0 +1,103 @@
+<%- include('../partials/head') %>
+<% const isOrganizer = event.isOrganizedBy(user); const attending = event.hasAttendee(user); %>
+
+<section class="event-hero cat-<%= h.slug(event.category) %>">
+  <div class="container">
+    <a class="back-link" href="/events"><i class="bi bi-arrow-left"></i> All events</a>
+    <span class="event-hero__category"><%= event.category %></span>
+    <h1><%= event.title %></h1>
+    <p class="event-hero__meta">
+      <span><i class="bi bi-calendar3"></i> <%= h.date(event.date) %></span>
+      <span><i class="bi bi-clock"></i> <%= h.time(event.date) %></span>
+      <span><i class="bi bi-geo-alt"></i> <%= event.location %></span>
+    </p>
+  </div>
+</section>
+
+<section class="container section">
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="panel">
+        <h2 class="panel__title">About this event</h2>
+        <% event.description.split(/\n+/).forEach((paragraph) => { %>
+        <p><%= paragraph %></p>
+        <% }) %>
+
+        <hr />
+        <div class="organizer">
+          <%- include('../partials/avatar', { person: event.organizer, size: 'md' }) %>
+          <div>
+            <span class="organizer__label">Organised by</span>
+            <strong><%= event.organizer ? event.organizer.name : 'Unknown' %></strong>
+          </div>
+        </div>
+      </div>
+
+      <% if (isOrganizer) { %>
+      <div class="panel owner-actions">
+        <span><i class="bi bi-shield-check"></i> You're the organiser of this event.</span>
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-secondary btn-sm" href="/events/<%= event.id %>/edit"><i class="bi bi-pencil"></i> Edit</a>
+          <form action="/events/<%= event.id %>" method="post" data-confirm="Delete this event? This can't be undone.">
+            <input type="hidden" name="_csrf" value="<%= csrfToken() %>" />
+            <input type="hidden" name="_method" value="DELETE" />
+            <button type="submit" class="btn btn-outline-danger btn-sm" id="deleteEvent"><i class="bi bi-trash"></i> Delete</button>
+          </form>
+        </div>
+      </div>
+      <% } %>
+    </div>
+
+    <aside class="col-lg-4">
+      <div class="panel rsvp">
+        <div class="rsvp__count">
+          <strong id="attendeeCount"><%= event.attendees.length %></strong>
+          <span><%= event.capacity ? 'of ' + event.capacity + ' spots taken' : (event.attendees.length === 1 ? 'person going' : 'people going') %></span>
+        </div>
+
+        <% if (event.capacity) { %>
+        <div class="progress rsvp__progress" role="progressbar" aria-label="Spots taken" aria-valuenow="<%= event.attendees.length %>" aria-valuemin="0" aria-valuemax="<%= event.capacity %>">
+          <div class="progress-bar w-<%= Math.min(Math.round((event.attendees.length / event.capacity) * 20) * 5, 100) %>"></div>
+        </div>
+        <% } %>
+
+        <% if (event.isPast) { %>
+        <p class="rsvp__note"><i class="bi bi-clock-history"></i> This event has already taken place.</p>
+        <% } else if (!user) { %>
+        <a class="btn btn-brand w-100" href="/users/login">Log in to attend</a>
+        <% } else { %>
+        <form action="/events/<%= event.id %>/attend" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken() %>" />
+          <% if (attending) { %>
+          <button type="submit" class="btn btn-outline-secondary w-100" id="attendBtn"><i class="bi bi-x-lg"></i> Cancel my spot</button>
+          <p class="rsvp__note text-success"><i class="bi bi-check-circle-fill"></i> You're going!</p>
+          <% } else if (event.isFull) { %>
+          <button type="button" class="btn btn-secondary w-100" id="attendBtn" disabled>Event is full</button>
+          <% } else { %>
+          <button type="submit" class="btn btn-brand w-100" id="attendBtn"><i class="bi bi-ticket-perforated"></i> Attend this event</button>
+          <% if (event.spotsLeft !== null) { %><p class="rsvp__note"><%= h.plural(event.spotsLeft, 'spot') %> left</p><% } %>
+          <% } %>
+        </form>
+        <% } %>
+
+        <% if (event.attendees.length) { %>
+        <hr />
+        <h3 class="rsvp__heading">Who's going</h3>
+        <ul class="attendee-list list-unstyled">
+          <% event.attendees.slice(0, 8).forEach((person) => { %>
+          <li>
+            <%- include('../partials/avatar', { person, size: 'sm' }) %>
+            <span><%= person.name %></span>
+          </li>
+          <% }) %>
+          <% if (event.attendees.length > 8) { %>
+          <li class="text-body-secondary">+ <%= event.attendees.length - 8 %> more</li>
+          <% } %>
+        </ul>
+        <% } %>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<%- include('../partials/foot') %>

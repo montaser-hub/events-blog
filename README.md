@@ -1,265 +1,105 @@
 # Events Blog
 
-An Events Blog application built with Node.js, Express, MongoDB, and EJS. This application allows users to create, view, edit, and delete events. Users can also upload profile pictures and view them in their profiles.
+A community events app: create events, discover what's on, and RSVP. It's server-rendered with **Node.js, Express, MongoDB (Mongoose), EJS and Passport**, on a Bootstrap 5 UI.
+
+> **Background.** This started as a follow-along project from a Node.js tutorial by Abdulaziz Alzaabi (basic event CRUD with login). I later rebuilt it: I fixed its security problems, restructured the code, redesigned the interface and added the features under [What I changed](#what-i-changed).
+
+![Browse events](docs/browse.webp)
+
+| Event page with RSVP | Search and filters |
+| --- | --- |
+| ![Event page](docs/event.webp) | ![Search](docs/search.webp) |
+| **Profile: your events and avatar** | **Create / edit an event** |
+| ![Profile](docs/profile.webp) | ![Edit form](docs/edit.webp) |
+
+<img src="docs/mobile.webp" alt="Mobile layouts" width="720" />
 
 ---
 
-## Table of Contents
+## Features
 
-- [Live Demo](#live-demo)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Routes](#routes)
-- [File Structure](#file-structure)
-- [Dependencies](#dependencies)
-- [Recommended Environment](#recommended-environment)
-- [Use Cases](#use-cases)
-- [Advantages](#advantages)
-- [Disadvantages](#disadvantages)
-- [Capabilities](#capabilities)
-- [Limitations](#limitations)
-- [License](#license)
+- **Browse:** upcoming and past tabs, search by title or location, a category filter and pagination.
+- **Create and manage events:** title, category, date and time, location, capacity and description, validated on both client and server.
+- **RSVP:** attend or cancel with one click, with live spot counts, a capacity bar and "Full" states. Capacity is enforced atomically in the database, so two people can't take the last spot.
+- **Accounts:** sign up, log in and log out with Passport sessions stored in MongoDB; after logging in you return to the page you asked for.
+- **Profile:** change your display name, upload a profile picture (with a live preview), and see the events you organise and attend.
+- **Responsive and accessible:** works from 390 px upwards, with a skip link, labelled controls, keyboard-focusable cards and reduced-motion support.
 
----
+## What I changed
 
-## Live Demo
+### Security
+| Before | After |
+| --- | --- |
+| Database username and password hardcoded in `config/database.js` | Configuration from environment variables (`.env`, never committed); the app refuses to start without them |
+| `express.static("node_modules")` exposed every installed package over HTTP | Only `/public` and processed avatars are served; libraries load from a CDN with SRI hashes |
+| Any logged-in user could edit or delete **anyone's** event (only the buttons were hidden) | Ownership is checked on the server for edit, update and delete |
+| Avatar upload: no login check, any file type, any size, original filename kept | Login required; image types only; 2 MB limit; the file is re-encoded with Sharp (which rejects non-images) and stored under a random name |
+| No CSRF protection; logout was a `GET` link | Synchroniser-token CSRF protection on every state-changing request; logout is a `POST` |
+| Session secret was the string `"lorem ipsum"`, sessions in memory | Secret from the environment; sessions stored in MongoDB; `httpOnly`, `sameSite` cookies, `secure` in production |
+| Login revealed whether an email was registered | One generic error message; rate limiting on login and signup |
+| No security headers | helmet with a strict Content Security Policy (no inline scripts or styles) |
+| `bcrypt-nodejs` (unmaintained since 2013) | `bcryptjs`, with hashing done asynchronously in a model hook |
 
-[Live Demo Link](https://example.com/events-blog)
+### Bugs fixed
+- Creating an event with invalid data **saved it anyway** (a missing `return` after the validation redirect) and logged "headers already sent".
+- Bootstrap 5 was installed but the templates used Bootstrap 4 markup, so the **mobile menu button did nothing** and many spacing classes had no effect.
+- The fixed-position footer covered the bottom of long pages.
+- Events were listed in insertion order with five per page in rows of three; they're now sorted by date, six per page.
+- Search input is escaped before it is used in a regular expression.
+- Logging out could crash: the handler called `next` without declaring it.
 
----
+### Added
+- RSVPs with capacity, categories, search, upcoming/past tabs, profile pages, a display name, friendly 404 and error pages, a seed script with dates relative to today, and Docker Compose for MongoDB.
 
-## Installation
+## Run it locally
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/events-blog.git
-   cd events-blog
-   ```
+Requirements: Node.js 18.11+ and Docker (or any MongoDB instance).
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Create a `.env` file** with the following variables:
-   ```plaintext
-   MONGO_URI=your_mongodb_connection_string
-   SESSION_SECRET=your_session_secret
-   ```
-
-4. **Run the application**:
-   ```bash
-   npm start
-   ```
-
----
-
-## Configuration
-
-Ensure that the `app.js` file is set up to serve static files correctly and connect to MongoDB. Below is an example configuration:
-
-```javascript
-const express = require('express');
-const path = require('path');
-const mongoose = require('mongoose');
-const session = require('express-session');
-const flash = require('connect-flash');
-const passport = require('passport');
-require('./config/passport-setup');
-
-// Load environment variables
-require('dotenv').config();
-
-const app = express();
-
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Could not connect to MongoDB', err));
-
-// Middlewares
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true,
-}));
-app.use(flash());
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Routes
-app.use('/events', require('./routes/event-routes'));
-app.use('/users', require('./routes/user-routes'));
-
-// Set view engine
-app.set('view engine', 'ejs');
-
-// Listen on port 3000
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});
+```bash
+git clone https://github.com/montaser-hub/events-blog.git
+cd events-blog
+npm install
+cp .env.example .env        # then set SESSION_SECRET (e.g. `openssl rand -hex 32`)
+npm run db:up               # MongoDB on localhost:27019 (Docker)
+npm run seed                # 8 people and 16 events
+npm start                   # http://localhost:3000
 ```
 
----
-
-## Usage
-
-### Creating an Event
-- Navigate to `/events/create`.
-- Fill out the event form and submit it.
-
-### Viewing Events
-- Navigate to `/events` to view all events with pagination.
-
-### Editing an Event
-- Click on an event to view its details.
-- Click the "Edit" button to edit the event.
-
-### Deleting an Event
-- Click the "Delete" button on an event to delete it.
-
-### Uploading a Profile Picture
-- Navigate to `/users/profile`.
-- Upload a profile picture and submit it.
-
----
+**Demo login:** `demo@events.dev` / `test1234`
 
 ## Routes
 
-### User Routes
-- `GET /users/login`: Render login page.
-- `POST /users/login`: Handle login form submission.
-- `GET /users/signup`: Render signup page.
-- `POST /users/signup`: Handle signup form submission.
-- `GET /users/profile`: Render user profile page.
-- `POST /users/uploadAvatar`: Handle avatar upload.
-- `GET /users/logout`: Logout user.
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/events` | List. Query: `q`, `category`, `when=past`, `page` |
+| GET | `/events/new` | Create form (login required) |
+| POST | `/events` | Create (login required) |
+| GET | `/events/:id` | Event page |
+| GET | `/events/:id/edit` | Edit form (organiser only) |
+| PUT | `/events/:id` | Update (organiser only) |
+| DELETE | `/events/:id` | Delete (organiser only) |
+| POST | `/events/:id/attend` | Toggle RSVP (login required) |
+| GET, POST | `/users/login`, `/users/signup` | Authentication |
+| POST | `/users/logout` | Log out |
+| GET, POST | `/users/profile` | Profile page; update display name |
+| POST | `/users/avatar` | Upload profile picture |
 
-### Event Routes
-- `GET /events/create`: Render create event page.
-- `POST /events/create`: Handle create event form submission.
-- `GET /events/:pageNo?`: List events with pagination.
-- `GET /events/show/:id`: View a single event.
-- `GET /events/edit/:id`: Render edit event page.
-- `POST /events/update`: Handle update event form submission.
-- `DELETE /events/delete/:id`: Delete an event.
+HTML forms send `PUT` and `DELETE` through a hidden `_method` field.
 
----
+## Project structure
 
-## File Structure
-
-```plaintext
-your_project/
-|-- config/
-|   |-- database.js
-|   |-- passport-setup.js
-|-- models/
-|   |-- Event.js
-|   |-- User.js
-|-- public/
-|   |-- js/
-|       |-- main.js
-|-- routes/
-|   |-- event-routes.js
-|   |-- user-routes.js
-|-- views/
-|   |-- event/
-|       |-- create.ejs
-|       |-- edit.ejs
-|       |-- index.ejs
-|       |-- show.ejs
-|   |-- partials/
-|       |-- flashMessages.ejs
-|       |-- footer.ejs
-|       |-- header.ejs
-|       |-- navbar.ejs
-|   |-- user/
-|       |-- login.ejs
-|       |-- profile.ejs
-|       |-- signup.ejs
-|-- uploads/
-|   |-- images/
-|       |-- [uploaded_images]
-|-- .env
-|-- .gitattributes
-|-- app.js
-|-- package.json
-|-- README.md
 ```
-
----
-
-## Dependencies
-
-- **Node.js**: JavaScript runtime
-- **Express**: Web framework
-- **Mongoose**: MongoDB object modeling
-- **Passport**: Authentication middleware
-- **Multer**: Middleware for handling file uploads
-- **EJS**: Embedded JavaScript templating
-- **Axios**: Promise-based HTTP client
-- **Moment.js**: Date manipulation library
-
----
-
-## Recommended Environment
-
-- **Operating System**: Windows, macOS, or Linux
-- **Node.js Version**: 12.x or higher
-- **MongoDB**: Version 4.x or higher
-- **Browser**: Latest version of Chrome, Firefox, Edge, or Safari
-
----
-
-## Use Cases
-
-- **Event Management**: Create, view, edit, and delete events for personal or organizational purposes.
-- **User Profiles**: Allow users to manage their profiles, including uploading profile pictures.
-- **Event Promotion**: Promote and share events with an easy-to-use web interface.
-
----
-
-## Advantages
-
-- **Easy to Use**: Simple and intuitive event management interface.
-- **Modular Codebase**: Organized structure makes it easy to extend and maintain.
-- **Responsive Design**: Compatible with various devices and screen sizes.
-
----
-
-## Disadvantages
-
-- **Basic Features**: Limited to basic event management functionalities.
-- **No Real-Time Updates**: Does not support real-time event updates.
-- **Single User**: Authentication and profile management are basic and may need enhancements for multi-user environments.
-
----
-
-## Capabilities
-
-- **Create Events**: Users can create events with details like title, description, location, and date.
-- **View Events**: Users can view a list of events with pagination support.
-- **Edit Events**: Users can edit event details.
-- **Delete Events**: Users can delete events.
-- **User Authentication**: Basic authentication system with login and signup functionalities.
-- **Profile Management**: Users can upload pictures and manage their profiles.
-
----
-
-## Limitations
-
-- **No Email Notifications**: The application does not send email notifications for events.
-- **No Social Media Integration**: Events cannot be shared directly on social media platforms.
-- **No Calendar Integration**: Events are not integrated with calendar applications.
-
----
+server.js         entry: connects to MongoDB, starts the server, graceful shutdown
+app.js            Express app: security headers, sessions, CSRF, routes, error pages
+config/           environment validation, database connection, Passport strategy
+middleware/       auth and ownership guards, CSRF, upload handling, validators
+models/           User, Event (Mongoose)
+routes/           events, users
+views/            EJS templates, partials and formatting helpers
+public/           stylesheet and client-side script
+seed/             sample data
+```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[MIT](LICENSE) © Montaser Ismail

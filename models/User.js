@@ -1,31 +1,54 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt-nodejs");
+const bcrypt = require("bcryptjs");
 
-const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    match: [/^\S+@\S+\.\S+$/, "Please enter a valid email address"],
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+      minlength: 2,
+      maxlength: 50,
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email address"],
+    },
+    password: {
+      type: String,
+      required: true,
+      select: false, // never returned unless explicitly requested
+    },
+    // Filename inside uploads/avatars; empty means "show initials".
+    avatar: {
+      type: String,
+      default: "",
+    },
   },
-  password: {
-    type: String,
-    required: true,
-  },
-  avatar: {
-    type: String,
-    required: true,
-    default: "profile.png", // Default avatar image
-  },
+  { timestamps: true }
+);
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
 });
 
-userSchema.methods.hashPassword = function (password) {
-  return bcrypt.hashSync(password, bcrypt.genSaltSync(12));
+userSchema.methods.comparePassword = function (candidate) {
+  return bcrypt.compare(candidate, this.password);
 };
 
-userSchema.methods.comparePasswords = function (password, hash) {
-  return bcrypt.compareSync(password, hash);
-};
+userSchema.virtual("initials").get(function () {
+  return this.name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+});
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+module.exports = mongoose.model("User", userSchema);

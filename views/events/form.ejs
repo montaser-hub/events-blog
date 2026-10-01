@@ -1,0 +1,64 @@
+<%- include('../partials/head') %>
+
+<section class="container section section--narrow">
+  <a class="back-link back-link--dark" href="<%= isEdit ? '/events/' + event.id : '/events' %>"><i class="bi bi-arrow-left"></i> Back</a>
+  <div class="panel">
+    <h1 class="panel__heading"><%= isEdit ? 'Edit event' : 'Create an event' %></h1>
+    <p class="text-body-secondary mb-4"><%= isEdit ? 'Update the details below.' : 'Tell people what, when and where.' %></p>
+
+    <%- include('../partials/errors') %>
+
+    <form action="<%= isEdit ? '/events/' + event.id : '/events' %>" method="post" novalidate class="needs-validation">
+      <input type="hidden" name="_csrf" value="<%= csrfToken() %>" />
+      <% if (isEdit) { %><input type="hidden" name="_method" value="PUT" /><% } %>
+
+      <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" class="form-control" id="title" name="title" value="<%= event.title || '' %>" required minlength="5" maxlength="80" placeholder="e.g. Cairo JavaScript Meetup" />
+        <div class="invalid-feedback">Title must be 5–80 characters.</div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="category" class="form-label">Category</label>
+          <select class="form-select" id="category" name="category" required>
+            <% categories.forEach((c) => { %>
+            <option value="<%= c %>" <%= (event.category || 'Meetup') === c ? 'selected' : '' %>><%= c %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label for="date" class="form-label">Date &amp; time</label>
+          <input type="datetime-local" class="form-control" id="date" name="date" value="<%= h.inputDateTime(event.date) %>" required />
+          <div class="invalid-feedback">Please choose a date and time.</div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-8">
+          <label for="location" class="form-label">Location</label>
+          <input type="text" class="form-control" id="location" name="location" value="<%= event.location || '' %>" required minlength="3" maxlength="80" placeholder="Venue, city" />
+          <div class="invalid-feedback">Location must be 3–80 characters.</div>
+        </div>
+        <div class="col-md-4">
+          <label for="capacity" class="form-label">Capacity</label>
+          <input type="number" class="form-control" id="capacity" name="capacity" value="<%= event.capacity || '' %>" min="0" max="100000" step="1" placeholder="Unlimited" aria-describedby="capacityHelp" />
+          <div id="capacityHelp" class="form-text">Leave empty for unlimited.</div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="description" class="form-label">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="6" required minlength="15" maxlength="2000" placeholder="What should attendees expect?"><%= event.description || '' %></textarea>
+        <div class="invalid-feedback">Description must be 15–2000 characters.</div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <a class="btn btn-light" href="<%= isEdit ? '/events/' + event.id : '/events' %>">Cancel</a>
+        <button type="submit" class="btn btn-brand"><%= isEdit ? 'Save changes' : 'Publish event' %></button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<%- include('../partials/foot') %>
